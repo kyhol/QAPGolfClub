@@ -24,9 +24,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query("SELECT m FROM Member m JOIN m.tournaments t WHERE " +
             "(:name IS NULL OR m.name LIKE %:name%) AND " +
             "(:phoneNumber IS NULL OR m.phoneNumber LIKE %:phoneNumber%) AND " +
-            "(:membershipDuration IS NULL OR m.membershipDuration = :membershipDuration)")
+            "(:membershipType IS NULL OR m.membershipDuration = :membershipType)")
     List<Member> searchMembers(
             @Param("name") String name,
             @Param("phoneNumber") String phoneNumber,
-            @Param("membershipDuration") Integer membershipDuration);
+            @Param("membershipType") Integer membershipType);
 }

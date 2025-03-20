@@ -55,8 +55,8 @@ public class MemberService {
         memberRepository.delete(member);
     }
 
-    public List<Member> searchMembers(String name, String phoneNumber, Integer membershipDuration) {
-        return memberRepository.searchMembers(name, phoneNumber, membershipDuration);
+    public List<Member> searchMembers(String name, String phoneNumber, Integer membershipType) {
+        return memberRepository.searchMembers(name, phoneNumber, membershipType);
     }
 
     public List<Member> findByTournamentStartDate(LocalDate startDate) {
