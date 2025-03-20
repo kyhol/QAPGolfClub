@@ -15,7 +15,7 @@ This project is a RESTful API for a golf club tournament and membership system. 
 - Spring Boot 3
 - Spring Data JPA
 - MySQL
-- Docker & Docker Compose
+- Docker
 - Maven
 
 ## API Endpoints
@@ -63,7 +63,8 @@ This project is a RESTful API for a golf club tournament and membership system. 
 
 ### Prerequisites
 
-- Docker and Docker Compose installed on your machine
+- Docker installed on your machine
+- Java 17 and Maven for building the application
 
 ### Steps to Run
 
@@ -73,21 +74,41 @@ This project is a RESTful API for a golf club tournament and membership system. 
    cd golf-club-api
    ```
 
-2. Build and start the application using Docker Compose:
+2. Build the application with Maven:
    ```bash
-   docker-compose up -d
+   mvn clean package
    ```
 
-3. The application will be available at `http://localhost:8080`
-
-4. To stop the application:
+3. Build the Docker image:
    ```bash
-   docker-compose down
+   docker build -t golf-club-api .
+   ```
+
+4. Start the MySQL container (using port 3307 to avoid conflicts with local MySQL):
+   ```bash
+   docker run -d --name mysql-db -p 3307:3306 -e MYSQL_DATABASE=golf_club -e MYSQL_USER=golfuser -e MYSQL_PASSWORD=golfpass -e MYSQL_ROOT_PASSWORD=rootpassword mysql:8.0
+   ```
+
+5. Start the application container:
+   ```bash
+   docker run -d --name golf-app -p 8081:8081 -e "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3307/golf_club?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" -e SPRING_DATASOURCE_USERNAME=golfuser -e SPRING_DATASOURCE_PASSWORD=golfpass golf-club-api
+   ```
+
+6. The application will be available at `http://localhost:8081`
+
+7. To stop and remove the containers:
+   ```bash
+   docker stop golf-app mysql-db
+   docker rm golf-app mysql-db
    ```
 
 ### Data Persistence
 
-All data is stored in a MySQL database. Docker is configured to persist the database data in a volume, so your data will not be lost when stopping and restarting the containers.
+Data is stored in the MySQL container. Note that by default, data will be lost when the container is removed unless you add volume mapping:
+
+```bash
+docker run -d --name mysql-db -p 3307:3306 -e MYSQL_DATABASE=golf_club -e MYSQL_USER=golfuser -e MYSQL_PASSWORD=golfpass -e MYSQL_ROOT_PASSWORD=rootpassword -v golf-db-data:/var/lib/mysql mysql:8.0
+```
 
 ## API Request Examples
 
@@ -151,4 +172,52 @@ If you want to run the application locally without Docker, you'll need:
 Then run:
 ```bash
 mvn spring-boot:run
+```
+
+## Docker Compose (Alternative Setup)
+
+An alternative to running the containers individually is to use Docker Compose. Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8081:8081"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/golf_club?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: golfuser
+      SPRING_DATASOURCE_PASSWORD: golfpass
+      SERVER_PORT: 8081
+    restart: always
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: golf_club
+      MYSQL_USER: golfuser
+      MYSQL_PASSWORD: golfpass
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: always
+
+volumes:
+  mysql-data:
+```
+
+Then run:
+```bash
+docker-compose up -d
+```
+
+And stop with:
+```bash
+docker-compose down
 ```
